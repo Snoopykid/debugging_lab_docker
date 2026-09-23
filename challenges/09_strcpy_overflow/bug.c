@@ -18,7 +18,7 @@
  * [gdb 로 잡기]
  *   make gdb NAME=09_strcpy_overflow
  *   (gdb) run                       → 크래시(SIGSEGV 또는 abort)
- *   (gdb) bt                        → join 의 strcpy 또는 free 근처
+ *   (gdb) bt                        → join 의 strcpy 또는 free 근처 
  *   (gdb) break joined_size ; run    → 반환값(need)과 실제 필요한 총합을 비교
  *   (gdb) print need                → 마지막 조각 길이가 빠져 need 가 부족함을 확인
  *

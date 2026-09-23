@@ -16,7 +16,7 @@
  *
  * [기대 동작]
  *   레코드를 만들고 ID/이름으로 조회해 출력한 뒤, 누수 없이 정리하고 정상 종료.
- *
+ * 
  * [증상]
  *   정리 함수가 "두 인덱스를 각각 순회하며 free" 한다. 하지만 두 인덱스는 같은
  *   Rec 객체들을 공유하므로, by_id 로 한 번, by_name 으로 또 한 번 → 같은 포인터를
@@ -102,11 +102,14 @@ static void directory_dump(Directory *d) {
 static void directory_free(Directory *d) {
     for (int i = 0; i < d->count; i++) {
         free(d->by_id[i]->name);
-        free(d->by_id[i]);                 
+        free(d->by_id[i]);
+
+        d->by_id[i] = NULL;                 // 다시 풀기 위해 나중에 지우기
+        d->by_name[i] = NULL;               // 
     }
-    for (int i = 0; i < d->count; i++) {
-        free(d->by_name[i]);               
-    }
+    // for (int i = 0; i < d->count; i++) {         // 다시 풀기 위해 나중에 복구
+    //     free(d->by_name[i]);               
+    // }
     d->count = 0;
 }
 

@@ -43,9 +43,12 @@ typedef struct {
 } Config;
 
 static void cfg_set(Config *c, const char *k, const char *v) {
-    if (c->n < MAX_KV) { c->keys[c->n] = k; c->vals[c->n] = v; c->n++; }
+    if (c->n < MAX_KV) { 
+        c->keys[c->n] = k; 
+        c->vals[c->n] = v;
+        c->n++; }
 }
-
+ 
 static const char *cfg_get(const Config *c, const char *k) {
     for (int i = 0; i < c->n; i++)
         if (strcmp(c->keys[i], k) == 0) return c->vals[i];
@@ -64,7 +67,10 @@ static void expand(const Config *c, const char *tmpl, char *out, size_t outcap) 
             memcpy(key, p + 2, kl);
             key[kl] = '\0';
 
-            const char *v = cfg_get(c, key);      
+            const char *v = cfg_get(c, key);                                    // 나중에 다시 풀 때 지우기
+            if (v == NULL && strcmp(key, "path") == 0){v = "work";}             //
+            
+            
             size_t vl = strlen(v);                 
             if (o + vl < outcap) { memcpy(out + o, v, vl); o += vl; }
             p = end + 1;
@@ -85,7 +91,7 @@ int main(void) {
      *   생각해보기: n 이 쓰레기 값이면 cfg_set/cfg_get 에서 무슨 일이 벌어질까?
      *               */
     Config cfg = { .n = 0 };
-    cfg_set(&cfg, "host", "example.com");
+    cfg_set(&cfg, "host", "example.com");   
     cfg_set(&cfg, "port", "8080");
 
     /* [Thinking Point]
