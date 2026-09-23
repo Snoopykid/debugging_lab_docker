@@ -52,47 +52,59 @@ static void eb_init(EditBuffer *e) {
     e->cap = 4;
     e->len = 0;
     e->undo_n = 0;
-    e->data = malloc(e->cap * sizeof(int));
+    e->data = malloc(e->cap * sizeof(int));             // 4 * 4 = 16
     if (!e->data) { perror("malloc"); exit(1); }
     /* data 바로 뒤에 놓이는 별도 할당. data 가 힙 맨 끝(top)이 아니게 되어
        이후 realloc 이 제자리 확장 대신 '이동'을 택하게 만든다(→ 옛 블록 해제). */
-    e->clipboard = malloc(e->cap * sizeof(int));
+    e->clipboard = malloc(e->cap * sizeof(int));        // 4 * 4 = 16
     if (!e->clipboard) { perror("malloc"); exit(1); }
 }
 
 static void eb_snapshot(EditBuffer *e) {
-    if (e->undo_n < MAX_UNDO) e->undo[e->undo_n++] = e->data;
+    if (e->undo_n < MAX_UNDO) // e->undo[e->undo_n++] = e->data; // e->undo[0]에 e->data 주소 넣기
+    {
+        int *snapshot = malloc(e->len * sizeof(int)); // 현재 data 내용을 보관할 새 힙
+
+        if (e->len > 0 && snapshot == NULL){perror("malloc"); exit(1);} // 현재 len이 0이 아닌데 malloc 실패? 종료
+        
+        memcpy(snapshot, e->data, e->len * sizeof(int)); //현재 data 내용을 새 힙에 복사
+
+        e->undo[e->undo_n++] = snapshot; //독립적으로 소유하는 복사본 주소
+    
+    }
 }
 
 static void eb_grow(EditBuffer *e, size_t need) {
     size_t nc = e->cap;
-    while (nc < need) nc *= 2;
+    while (nc <= need) nc *= 2;  
     int *p = realloc(e->data, nc * sizeof(int));   
     if (!p) { perror("realloc"); free(e->data); exit(1); }
-    e->data = p;                                   
+    e->data = p;
     e->cap = nc;
 }
 
 static void eb_push(EditBuffer *e, int v) {
-    if (e->len == e->cap) eb_grow(e, e->len + 1);
-    e->data[e->len++] = v;
+    if (e->len == e->cap) eb_grow(e, e->len + 1);   // 실제 길이(len) == 최대 길이(cap)
+    e->data[e->len++] = v;                          // 최초 len = 0, v = i(0시작)
 }
 
 static void eb_free(EditBuffer *e) {
     free(e->data);
     free(e->clipboard);
     for (int i = 0; i < e->undo_n; i++) {
-        free(e->undo[i]);           
+        free(e->undo[i]);
+        e->undo[i] = NULL;
     }
     e->undo_n = 0;
     e->data = NULL;
+    e->clipboard = NULL;
 }
 
 int main(void) {
     EditBuffer e;
     eb_init(&e);
 
-    for (int i = 0; i < 3; i++) eb_push(&e, i);
+    for (int i = 0; i < 3; i++) eb_push(&e, i);  // data[0시작], len 3개
 
     eb_snapshot(&e);                 
 

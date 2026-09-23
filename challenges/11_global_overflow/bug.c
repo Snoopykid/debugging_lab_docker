@@ -16,7 +16,7 @@
  *
  * [gdb 로 잡기]
  *   make gdb NAME=11_global_overflow
- *   (gdb) run                          → 크래시(SIGSEGV)
+ *   (gdb) run                          → 크래시(SIGSEGV) 
  *   (gdb) bt                           → intern 의 memcpy 지점
  *   (gdb) print arena_off              → ARENA_SIZE 를 한참 초과했는지 확인
  *   (gdb) print (long)arena_off - (long)sizeof(arena)   → 경계에서 얼마나 넘었는지
@@ -51,14 +51,18 @@ static unsigned char arena[ARENA_SIZE];    /* 전역(.bss) 아레나 */
 static size_t arena_off = 0;
 
 static void *arena_alloc(size_t n) {
-    void *p = &arena[arena_off];
-    arena_off += n;
-    return p;
+    if (arena_off + n <= sizeof(arena)){    // if문은 내가 넣은 거. 다시 풀 때 없애기
+        void *p = &arena[arena_off];
+        arena_off += n;
+        return p;
+    }
+    return NULL;
 }
 
 static char *intern(const char *s) {
     size_t n = strlen(s) + 1;
     char *dst = arena_alloc(n);
+    if (dst == NULL){return dst;}   
     memcpy(dst, s, n);                      /* 경계를 넘은 위치면 여기서 크래시 */
     return dst;
 }
@@ -73,11 +77,16 @@ int main(void) {
 
     char *last = NULL;
     long total = 0;
+    char *temp = NULL;
     for (int i = 0; i < 100000; i++) {
         char buf[32];
-        snprintf(buf, sizeof buf, "%s-%d", words[i % nwords], i);
-        last = intern(buf);                 
-        total += (long)strlen(last);
+        snprintf(buf, sizeof (buf), "%s-%d", words[i % nwords], i);
+
+        temp = intern(buf);
+        if (temp != NULL){
+            last = temp;
+            total += (long)strlen(last);
+        }
     }
 
     printf("interned, last=%s total_len=%ld\n", last, total);
